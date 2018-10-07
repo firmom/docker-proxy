@@ -10,4 +10,5 @@ RUN \
   cp -r /root/image/* / && \
   rm -rf /root/image
 
+RUN chmod +x "/entrypoint/custom-entrypoint.sh"
 ENTRYPOINT ["/entrypoint/custom-entrypoint.sh"]
