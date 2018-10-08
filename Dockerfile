@@ -11,4 +11,4 @@ RUN \
   rm -rf /root/image
 
 RUN chmod +x "/entrypoint/custom-entrypoint.sh"
-ENTRYPOINT ["/entrypoint/custom-entrypoint.sh"]
+ENTRYPOINT ["sh", "/entrypoint/custom-entrypoint.sh"]

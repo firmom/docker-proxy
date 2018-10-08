@@ -2,8 +2,24 @@
 set -e
 
 # prepare config
-cat > /etc/nginx/sites-enabled/default << EndOfConfig
+cat > /etc/nginx/conf.d/default.conf << EndOfConfig
 # Nginx Proxy config
+access_log  /dev/stdout;
+error_log   /dev/stderr error;
+#sendfile    on;
+#resolver    127.0.0.11 ipv6=off;
+
+
+proxy_set_header Host \$host;
+proxy_set_header X-Real-IP \$remote_addr;
+proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto \$scheme;
+proxy_set_header X-Forwarded-Host \$server_name;
+
+server {
+  listen 80;
+  return 301 https://\$host\$request_uri;
+}
 
 EndOfConfig
 
@@ -11,25 +27,23 @@ EndOfConfig
 for i in `env | grep -E "^PROXY_.*_FROM"`; do
     proxyBaseKey="PROXY_$(echo $i| cut -d'_' -f 2)_"
     eval FROM=\${${proxyBaseKey}FROM}
+    eval CERT=\${${proxyBaseKey}CERT}
     eval TO=\${${proxyBaseKey}TO}
     eval PORT=\${${proxyBaseKey}PORT}
-    echo "PROXY: https://$FORM -> https://$TO:$PORT"
-cat >> /etc/nginx/sites-enabled/default << EndOfConfig
+    echo "PROXY: https://$FROM -> https://$TO:$PORT"
+cat >> /etc/nginx/conf.d/default.conf << EndOfConfig
 
-server {
-  listen 80;
-  server_name $FORM www.$FORM;
-  return 301 https://\$host\$request_uri;
+upstream docker-$TO {
+  server $TO:$PORT;
 }
 
 server {
-  listen 443;
-  server_name $FORM;
+  listen 443 ssl;
+  server_name $FROM www.$FROM;
 
-  ssl_certificate           /certs/$TO/fullchain.pem;
-  ssl_certificate_key       /certs/$TO/fullchain.pem;
+  ssl_certificate      /certs/$CERT/fullchain.pem;
+  ssl_certificate_key  /certs/$CERT/privkey.pem;
 
-  ssl on;
   ssl_session_cache  builtin:1000  shared:SSL:10m;
   ssl_protocols  TLSv1 TLSv1.1 TLSv1.2;
   ssl_ciphers HIGH:!aNULL:!eNULL:!EXPORT:!CAMELLIA:!DES:!MD5:!PSK:!RC4;
@@ -39,19 +53,15 @@ server {
   error_log   /dev/stderr error;
 
   location / {
-    proxy_set_header        Host \$host;
-    proxy_set_header        X-Real-IP \$remote_addr;
-    proxy_set_header        X-Forwarded-For \$proxy_add_x_forwarded_for;
-    proxy_set_header        X-Forwarded-Proto \$scheme;
-
-    # Fix the “It appears that your reverse proxy set up is broken" error.
-    proxy_pass          https://$TO:$PORT;
+    proxy_pass          https://docker-$TO;
     proxy_read_timeout  90;
-    proxy_redirect default;
+    proxy_ssl_verify    off;
+    proxy_redirect     off;
+    #proxy_redirect default;
   }
 }
 EndOfConfig
 done
 
 # run nginx proxy
-nginx -g daemon off;
+nginx -g "daemon off;"
