@@ -1,0 +1,25 @@
+# Example docker-compose file
+version: '3.4'
+
+services:
+  reverseproxy:
+    image: firmom/docker-proxy
+    restart: always
+    environment:
+      - "PROXY_CICD_FROM=localhost"
+      - "PROXY_CICD_CERT=localhost"
+      - "PROXY_CICD_TO=events.pozoga.eu"
+      - "PROXY_CICD_PORT=443"
+    networks:
+      - nproxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/path/to/your/certs:/certs"
+
+networks:
+  nproxy:
+    external:
+      name: nproxy
+  default:
