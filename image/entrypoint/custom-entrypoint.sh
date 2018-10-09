@@ -6,9 +6,6 @@ cat > /etc/nginx/conf.d/default.conf << EndOfConfig
 # Nginx Proxy config
 access_log  /dev/stdout;
 error_log   /dev/stderr error;
-#sendfile    on;
-#resolver    127.0.0.11 ipv6=off;
-
 
 proxy_set_header Host \$host;
 proxy_set_header X-Real-IP \$remote_addr;
@@ -20,9 +17,7 @@ server {
   listen 80;
   return 301 https://\$host\$request_uri;
 }
-
 EndOfConfig
-
 
 for i in `env | grep -E "^PROXY_.*_FROM"`; do
     proxyBaseKey="PROXY_$(echo $i| cut -d'_' -f 2)_"
@@ -57,7 +52,6 @@ server {
     proxy_read_timeout  90;
     proxy_ssl_verify    off;
     proxy_redirect     off;
-    #proxy_redirect default;
   }
 }
 EndOfConfig
