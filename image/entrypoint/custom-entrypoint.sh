@@ -28,7 +28,7 @@ for i in `env | grep -E "^PROXY_.*_FROM"`; do
     echo "PROXY: https://$FROM -> https://$TO:$PORT"
 cat >> /etc/nginx/conf.d/default.conf << EndOfConfig
 
-upstream docker-$TO {
+upstream docker-$TO-$PORT {
   server $TO:$PORT;
 }
 
@@ -48,10 +48,10 @@ server {
   error_log   /dev/stderr error;
 
   location / {
-    proxy_pass          https://docker-$TO;
+    proxy_pass          https://docker-$TO-$PORT;
     proxy_read_timeout  90;
     proxy_ssl_verify    off;
-    proxy_redirect     off;
+    proxy_redirect      off;
   }
 }
 EndOfConfig
